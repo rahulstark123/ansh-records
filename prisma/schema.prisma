@@ -1,0 +1,45 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Client {
+  id              String   @id @default(cuid())
+  clientId        String   @unique
+  name            String
+  company         String
+  email           String
+  phone           String
+  pincode         String
+  source          String
+  sourceLink      String?
+  contactMode     String
+  country         String
+  state           String
+  city            String
+  area            String
+  status          String   @default("Active")
+  notes           String?
+  isConverted     Boolean  @default(false)
+  appsTaken       String[]
+  amountPaid      Float    @default(0)
+  seatsCount      Int      @default(1)
+  conversionNotes String?
+  convertedAt     String?
+  createdAt       DateTime @default(now())
+}
+
+model Target {
+  id           String   @id @default(cuid())
+  date         DateTime @default(now())
+  focusedArea  String
+  reachedCount Int
+  dailyTarget  Int      @default(100)
+  notes        String?
+  createdAt    DateTime @default(now())
+}
