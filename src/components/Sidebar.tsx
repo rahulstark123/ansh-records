@@ -5,7 +5,7 @@ import { LayoutDashboard, BarChart3, Users, LogOut, Shield, Target } from "lucid
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { prefetchTab } from "@/lib/api-cache";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 
 interface SidebarProps {
   activeTab: string;
@@ -19,7 +19,7 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
 
   const handleConfirmLogout = async () => {
     setIsLoggingOut(true);
-    await supabase.auth.signOut();
+    await getSupabase().auth.signOut();
     router.push("/login");
   };
 
