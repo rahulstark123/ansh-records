@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { jsonResponse } from "@/lib/api-response";
 import { aggregateTargetsByDate, consolidateDuplicateDayTargets, findTargetsForDay } from "@/lib/targets";
+import { countContactModes } from "@/lib/contact-modes";
 
 export async function GET() {
   try {
@@ -15,7 +16,7 @@ export async function GET() {
       revenueAgg,
       stateGroups,
       sourceGroups,
-      contactModeGroups,
+      contactModeClients,
       recentClients,
       allTargets
     ] = await Promise.all([
@@ -35,10 +36,8 @@ export async function GET() {
         _count: { source: true },
         orderBy: { _count: { source: "desc" } }
       }),
-      prisma.client.groupBy({
-        by: ["contactMode"],
-        _count: { contactMode: true },
-        orderBy: { _count: { contactMode: "desc" } }
+      prisma.client.findMany({
+        select: { contactMode: true }
       }),
       prisma.client.findMany({
         orderBy: { createdAt: "desc" },
@@ -69,6 +68,11 @@ export async function GET() {
       ? Math.round(totalReachedSum / aggregatedTargets.length)
       : 0;
 
+    const contactModeCounts = countContactModes(contactModeClients);
+    const contactModeBreakdown = Object.entries(contactModeCounts)
+      .map(([mode, count]) => ({ mode, count }))
+      .sort((a, b) => b.count - a.count);
+
     return jsonResponse({
       stats: {
         totalClients,
@@ -94,10 +98,7 @@ export async function GET() {
         source: g.source,
         count: g._count.source
       })),
-      contactModeBreakdown: contactModeGroups.map((g) => ({
-        mode: g.contactMode,
-        count: g._count.contactMode
-      })),
+      contactModeBreakdown,
       recentActivity: recentClients.map((c) => ({
         name: c.name,
         company: c.company,

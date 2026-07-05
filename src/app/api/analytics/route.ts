@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { jsonResponse } from "@/lib/api-response";
+import { normalizeContactModes } from "@/lib/contact-modes";
 
 const clientAnalyticsSelect = {
   source: true,
@@ -97,7 +98,9 @@ export async function GET(req: Request) {
     // Contact mode breakdown
     const contactModeCounts: Record<string, number> = {};
     currentClients.forEach((c) => {
-      contactModeCounts[c.contactMode] = (contactModeCounts[c.contactMode] || 0) + 1;
+      for (const mode of normalizeContactModes(c.contactMode)) {
+        contactModeCounts[mode] = (contactModeCounts[mode] || 0) + 1;
+      }
     });
 
     // State breakdown (top 10)

@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { jsonResponse } from "@/lib/api-response";
 import { decrementDailyTarget, incrementDailyTarget } from "@/lib/targets";
+import { normalizeContactModes } from "@/lib/contact-modes";
 
 export async function GET() {
   try {
     const clients = await prisma.client.findMany({
-      orderBy: { clientId: "asc" }
+      orderBy: { clientId: "desc" }
     });
 
     return jsonResponse(clients);
@@ -45,7 +46,7 @@ export async function POST(req: Request) {
         pincode: body.pincode,
         source: body.source,
         sourceLink: body.sourceLink || null,
-        contactMode: body.contactMode,
+        contactMode: normalizeContactModes(body.contactMode),
         country: body.country,
         state: body.state,
         city: body.city,
@@ -92,7 +93,7 @@ export async function PUT(req: Request) {
     if (data.pincode !== undefined)       updateData.pincode = data.pincode;
     if (data.source !== undefined)        updateData.source = data.source;
     if (data.sourceLink !== undefined)    updateData.sourceLink = data.sourceLink || null;
-    if (data.contactMode !== undefined)   updateData.contactMode = data.contactMode;
+    if (data.contactMode !== undefined)   updateData.contactMode = normalizeContactModes(data.contactMode);
     if (data.country !== undefined)       updateData.country = data.country;
     if (data.state !== undefined)         updateData.state = data.state;
     if (data.city !== undefined)          updateData.city = data.city;

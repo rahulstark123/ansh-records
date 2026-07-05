@@ -30,6 +30,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useApiData } from "@/lib/useApiData";
 import { API } from "@/lib/api-cache";
 import { ClientsTableSkeleton } from "@/components/skeletons/TabSkeletons";
+import { CONTACT_MODES, formatContactModes, normalizeContactModes } from "@/lib/contact-modes";
 
 // Dynamically import LeafletMap with SSR disabled (Leaflet requires 'window')
 const LeafletMap = dynamic(() => import("./LeafletMap"), {
@@ -52,7 +53,7 @@ interface Client {
   pincode: string;
   source: string;
   sourceLink?: string;
-  contactMode: string;
+  contactMode: string[];
   country: string;
   area: string;
   city: string;
@@ -78,6 +79,12 @@ const QUICK_COUNTRIES = [
   { code: "AU", name: "Australia" }
 ];
 
+function getClientIdNumber(clientId?: string) {
+  if (!clientId) return 0;
+  const match = clientId.match(/\d+/);
+  return match ? parseInt(match[0], 10) : 0;
+}
+
 function mapApiClient(c: any): Client {
   return {
     id: c.id,
@@ -89,7 +96,7 @@ function mapApiClient(c: any): Client {
     pincode: c.pincode,
     source: c.source,
     sourceLink: c.sourceLink || undefined,
-    contactMode: c.contactMode,
+    contactMode: normalizeContactModes(c.contactMode),
     country: c.country,
     state: c.state,
     city: c.city,
@@ -146,7 +153,7 @@ export default function ClientsTab() {
   const [formManualAddress, setFormManualAddress] = useState("");
   const [formSource, setFormSource] = useState("LinkedIn");
   const [formSourceLink, setFormSourceLink] = useState("");
-  const [formContactMode, setFormContactMode] = useState("Call");
+  const [formContactModes, setFormContactModes] = useState<string[]>(["Call"]);
 
   // Form Geography Selections
   const [formCountry, setFormCountry] = useState("IN");
@@ -190,7 +197,7 @@ export default function ClientsTab() {
     setFormManualAddress(client.manualAddress || "");
     setFormSource(client.source);
     setFormSourceLink(client.sourceLink || "");
-    setFormContactMode(client.contactMode);
+    setFormContactModes(normalizeContactModes(client.contactMode));
     setFormCountry(client.country);
     setFormState(client.state);
     setFormCity(client.city);
@@ -317,7 +324,7 @@ export default function ClientsTab() {
     setFormManualAddress("");
     setFormSource("LinkedIn");
     setFormSourceLink("");
-    setFormContactMode("Call");
+    setFormContactModes(["Call"]);
     setFormNotes("");
     setFormDate(new Date().toISOString().split("T")[0]);
   };
@@ -740,7 +747,8 @@ export default function ClientsTab() {
   }, [selectedCountry, selectedState, selectedCity, clients, customAreas]);
 
   const filteredClients = useMemo(() => {
-    return clients.filter((client) => {
+    return clients
+      .filter((client) => {
       const wantsConverted = activeTableTab === "converted";
       const isClientConverted = !!client.isConverted;
       if (wantsConverted !== isClientConverted) return false;
@@ -760,7 +768,8 @@ export default function ClientsTab() {
       }
 
       return true;
-    });
+    })
+      .sort((a, b) => getClientIdNumber(b.clientId) - getClientIdNumber(a.clientId));
   }, [clients, selectedCountry, selectedState, selectedCity, selectedArea, searchQuery, activeTableTab]);
 
   const formStatesList = useMemo(() => State.getStatesOfCountry(formCountry), [formCountry]);
@@ -805,6 +814,11 @@ export default function ClientsTab() {
       return;
     }
 
+    if (formContactModes.length === 0) {
+      setFormError("Please select at least one contact mode.");
+      return;
+    }
+
     if (formEmail.trim() && !/\S+@\S+\.\S+/.test(formEmail.trim())) {
       setFormError("Please enter a valid email address.");
       return;
@@ -824,7 +838,7 @@ export default function ClientsTab() {
             pincode: formPincode,
             source: formSource,
             sourceLink: formSourceLink || undefined,
-            contactMode: formContactMode,
+            contactMode: formContactModes,
             country: formCountry,
             state: formState,
             city: formCity,
@@ -851,7 +865,7 @@ export default function ClientsTab() {
             pincode: updated.pincode,
             source: updated.source,
             sourceLink: updated.sourceLink || undefined,
-            contactMode: updated.contactMode,
+            contactMode: normalizeContactModes(updated.contactMode),
             country: updated.country,
             state: updated.state,
             city: updated.city,
@@ -875,7 +889,7 @@ export default function ClientsTab() {
             pincode: formPincode,
             source: formSource,
             sourceLink: formSourceLink || undefined,
-            contactMode: formContactMode,
+            contactMode: formContactModes,
             country: formCountry,
             state: formState,
             city: formCity,
@@ -902,7 +916,7 @@ export default function ClientsTab() {
           pincode: created.pincode,
           source: created.source,
           sourceLink: created.sourceLink || undefined,
-          contactMode: created.contactMode,
+          contactMode: normalizeContactModes(created.contactMode),
           country: created.country,
           area: created.area,
           city: created.city,
@@ -931,7 +945,7 @@ export default function ClientsTab() {
       setFormManualAddress("");
       setFormSource("LinkedIn");
       setFormSourceLink("");
-      setFormContactMode("Call");
+      setFormContactModes(["Call"]);
       setFormNotes("");
       setIsAddDrawerOpen(false);
 
@@ -1457,7 +1471,7 @@ export default function ClientsTab() {
                         {client.company}
                       </div>
                       <div className="text-[9px] text-slate-400 mt-0.5">
-                        Mode: <strong className="text-slate-500">{client.contactMode}</strong>
+                        Mode: <strong className="text-slate-500">{formatContactModes(client.contactMode)}</strong>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-slate-500 dark:text-slate-400">
@@ -1858,16 +1872,25 @@ export default function ClientsTab() {
 
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">
-                      Primary Contact Mode
+                      Contact Modes
                     </label>
+                    <p className="text-[9px] text-slate-400 font-semibold">
+                      Select one or more ways to reach this client.
+                    </p>
                     <div className="grid grid-cols-4 gap-2">
-                      {["Call", "Message", "WhatsApp", "Instagram", "YouTube", "Email", "Direct", "LinkedIn"].map((mode) => {
-                        const isSelected = formContactMode === mode;
+                      {CONTACT_MODES.map((mode) => {
+                        const isSelected = formContactModes.includes(mode);
                         return (
                           <button
                             type="button"
                             key={mode}
-                            onClick={() => setFormContactMode(mode)}
+                            onClick={() => {
+                              setFormContactModes((prev) =>
+                                isSelected
+                                  ? prev.filter((item) => item !== mode)
+                                  : [...prev, mode]
+                              );
+                            }}
                             className={`py-1.5 px-1 rounded-lg text-[10px] font-bold border transition text-center cursor-pointer ${
                               isSelected
                                 ? "bg-primary border-primary text-white shadow-sm"
@@ -2307,8 +2330,8 @@ export default function ClientsTab() {
                         <span className="font-bold text-slate-900 dark:text-white block mt-0.5">{detailedClient.phone}</span>
                       </div>
                       <div className="bg-slate-50 dark:bg-slate-950/20 p-2.5 rounded-xl border border-slate-200/50 dark:border-slate-850">
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-semibold">Contact Mode</span>
-                        <span className="font-bold text-primary block mt-0.5">{detailedClient.contactMode}</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-semibold">Contact Modes</span>
+                        <span className="font-bold text-primary block mt-0.5">{formatContactModes(detailedClient.contactMode)}</span>
                       </div>
                       <div className="bg-slate-50 dark:bg-slate-950/20 p-2.5 rounded-xl border border-slate-200/50 dark:border-slate-850">
                         <span className="text-[10px] text-slate-550 dark:text-slate-400 block font-semibold">System Status</span>

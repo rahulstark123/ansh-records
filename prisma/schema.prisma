@@ -18,7 +18,7 @@ model Client {
   pincode         String
   source          String
   sourceLink      String?
-  contactMode     String
+  contactMode     String[]
   country         String
   state           String
   city            String
