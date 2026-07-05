@@ -4,6 +4,11 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "ANSH Record - Clients & Analytics Dashboard",
   description: "Enterprise clients tracking, geographical insights, and performance analytics.",
+  icons: {
+    icon: "/anshFavicon.png",
+    shortcut: "/anshFavicon.png",
+    apple: "/anshFavicon.png",
+  },
 };
 
 export default function RootLayout({

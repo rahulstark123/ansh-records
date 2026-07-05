@@ -102,6 +102,12 @@ export default function LeafletMap({
         </div>
       </div>
 
+      {markers.length === 0 && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 bg-white/90 dark:bg-slate-950/90 backdrop-blur-md px-4 py-2 rounded-xl shadow-lg border border-slate-200/80 dark:border-slate-800/80 text-[10px] font-semibold text-slate-500 dark:text-slate-400 pointer-events-none">
+          No client hotspots in this view yet.
+        </div>
+      )}
+
       {/* Full Screen Mode Toggle Button */}
       <button
         onClick={() => setIsFullscreen(!isFullscreen)}

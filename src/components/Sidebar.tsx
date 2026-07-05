@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { LayoutDashboard, BarChart3, Users, LogOut, Shield, Target } from "lucide-react";
+import { LayoutDashboard, BarChart3, Users, LogOut, Target } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { prefetchTab } from "@/lib/api-cache";
 import { getSupabase } from "@/lib/supabase";
+import AppLogo from "@/components/AppLogo";
 
 interface SidebarProps {
   activeTab: string;
@@ -33,15 +34,13 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
   return (
     <aside className="w-64 border-r border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl flex flex-col h-screen sticky top-0 shrink-0">
       {/* Brand Header */}
-      <div className="p-6 flex items-center gap-3 border-b border-slate-200/50 dark:border-slate-800/50">
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-primary to-accent flex items-center justify-center shadow-md shadow-primary/20">
-          <Shield className="w-5 h-5 text-white" />
-        </div>
-        <div>
-          <span className="font-bold text-slate-800 dark:text-slate-100 text-base leading-none block">
+      <div className="px-4 py-3.5 flex items-center gap-2 border-b border-slate-200/50 dark:border-slate-800/50">
+        <AppLogo height={52} width={56} imageClassName="object-left" />
+        <div className="flex flex-col justify-center min-w-0 leading-none">
+          <span className="font-bold text-slate-800 dark:text-slate-100 text-[15px] tracking-tight whitespace-nowrap">
             ANSH Record
           </span>
-          <span className="text-[10px] font-semibold text-primary uppercase tracking-wider block mt-0.5">
+          <span className="text-[10px] font-semibold text-primary uppercase tracking-widest whitespace-nowrap mt-0.5">
             Admin Suite
           </span>
         </div>

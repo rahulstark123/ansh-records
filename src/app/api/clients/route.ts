@@ -39,7 +39,7 @@ export async function POST(req: Request) {
         clientId: nextClientId,
         name: body.name,
         company: body.company,
-        email: body.email,
+        email: body.email?.trim() || null,
         phone: body.phone,
         pincode: body.pincode,
         source: body.source,
@@ -49,6 +49,7 @@ export async function POST(req: Request) {
         state: body.state,
         city: body.city,
         area: body.area,
+        manualAddress: body.manualAddress?.trim() || null,
         status: body.status || "Active",
         notes: body.notes || null,
         isConverted: !!body.isConverted,
@@ -75,7 +76,7 @@ export async function POST(req: Request) {
         },
         focusedArea: {
           equals: body.area,
-          mode: 'insensitive'
+          mode: "insensitive"
         }
       }
     });
@@ -116,7 +117,7 @@ export async function PUT(req: Request) {
     const updateData: Record<string, any> = {};
     if (data.name !== undefined)          updateData.name = data.name;
     if (data.company !== undefined)       updateData.company = data.company;
-    if (data.email !== undefined)         updateData.email = data.email;
+    if (data.email !== undefined)         updateData.email = data.email?.trim() || null;
     if (data.phone !== undefined)         updateData.phone = data.phone;
     if (data.pincode !== undefined)       updateData.pincode = data.pincode;
     if (data.source !== undefined)        updateData.source = data.source;
@@ -126,6 +127,7 @@ export async function PUT(req: Request) {
     if (data.state !== undefined)         updateData.state = data.state;
     if (data.city !== undefined)          updateData.city = data.city;
     if (data.area !== undefined)          updateData.area = data.area;
+    if (data.manualAddress !== undefined) updateData.manualAddress = data.manualAddress?.trim() || null;
     if (data.status !== undefined)        updateData.status = data.status;
     if (data.notes !== undefined)         updateData.notes = data.notes || null;
     if (data.isConverted !== undefined)   updateData.isConverted = !!data.isConverted;
@@ -156,7 +158,7 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Database client identifier is required" }, { status: 400 });
     }
 
-    // Pre-fetch client to extract area and creation date for target decrement
+    // Sync outreach target when a registered client is removed
     const client = await prisma.client.findUnique({
       where: { id }
     });
@@ -176,7 +178,7 @@ export async function DELETE(req: Request) {
           },
           focusedArea: {
             equals: client.area,
-            mode: 'insensitive'
+            mode: "insensitive"
           }
         }
       });

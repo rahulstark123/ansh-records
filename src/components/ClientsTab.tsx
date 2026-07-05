@@ -47,7 +47,7 @@ interface Client {
   name: string;
   createdAt?: string;
   company: string;
-  email: string;
+  email?: string | null;
   phone: string;
   pincode: string;
   source: string;
@@ -57,6 +57,7 @@ interface Client {
   area: string;
   city: string;
   state: string;
+  manualAddress?: string | null;
   tier?: "Enterprise" | "Premium" | "Standard";
   status: "Active" | "Inactive";
   notes?: string;
@@ -83,7 +84,7 @@ function mapApiClient(c: any): Client {
     clientId: c.clientId,
     name: c.name,
     company: c.company,
-    email: c.email,
+    email: c.email || undefined,
     phone: c.phone,
     pincode: c.pincode,
     source: c.source,
@@ -93,6 +94,7 @@ function mapApiClient(c: any): Client {
     state: c.state,
     city: c.city,
     area: c.area,
+    manualAddress: c.manualAddress || undefined,
     status: c.status,
     notes: c.notes || undefined,
     isConverted: !!c.isConverted,
@@ -141,6 +143,7 @@ export default function ClientsTab() {
   const [formPhone, setFormPhone] = useState("");
   const [formPincode, setFormPincode] = useState("");
   const [formEmail, setFormEmail] = useState("");
+  const [formManualAddress, setFormManualAddress] = useState("");
   const [formSource, setFormSource] = useState("LinkedIn");
   const [formSourceLink, setFormSourceLink] = useState("");
   const [formContactMode, setFormContactMode] = useState("Call");
@@ -182,8 +185,9 @@ export default function ClientsTab() {
     setFormName(client.name);
     setFormCompany(client.company);
     setFormPhone(client.phone);
-    setFormEmail(client.email);
+    setFormEmail(client.email || "");
     setFormPincode(client.pincode);
+    setFormManualAddress(client.manualAddress || "");
     setFormSource(client.source);
     setFormSourceLink(client.sourceLink || "");
     setFormContactMode(client.contactMode);
@@ -310,6 +314,7 @@ export default function ClientsTab() {
     setFormPhone("");
     setFormPincode("");
     setFormEmail("");
+    setFormManualAddress("");
     setFormSource("LinkedIn");
     setFormSourceLink("");
     setFormContactMode("Call");
@@ -750,7 +755,7 @@ export default function ClientsTab() {
         return (
           client.name.toLowerCase().includes(query) ||
           client.company.toLowerCase().includes(query) ||
-          client.email.toLowerCase().includes(query)
+          client.email?.toLowerCase().includes(query)
         );
       }
 
@@ -795,12 +800,12 @@ export default function ClientsTab() {
     e.preventDefault();
     setFormError("");
 
-    if (!formName || !formCompany || !formPhone || !formEmail || !formState || !formCity || !formArea || !formPincode) {
+    if (!formName || !formCompany || !formPhone || !formState || !formCity || !formArea || !formPincode) {
       setFormError("Please fill in all mandatory fields.");
       return;
     }
 
-    if (!/\S+@\S+\.\S+/.test(formEmail)) {
+    if (formEmail.trim() && !/\S+@\S+\.\S+/.test(formEmail.trim())) {
       setFormError("Please enter a valid email address.");
       return;
     }
@@ -814,7 +819,7 @@ export default function ClientsTab() {
             id: editingClient.id,
             name: formName,
             company: formCompany,
-            email: formEmail,
+            email: formEmail.trim() || undefined,
             phone: formPhone,
             pincode: formPincode,
             source: formSource,
@@ -824,6 +829,7 @@ export default function ClientsTab() {
             state: formState,
             city: formCity,
             area: formArea,
+            manualAddress: formManualAddress.trim() || undefined,
             notes: formNotes || undefined,
             date: formDate
           })
@@ -840,7 +846,7 @@ export default function ClientsTab() {
             ...c,
             name: updated.name,
             company: updated.company,
-            email: updated.email,
+            email: updated.email || undefined,
             phone: updated.phone,
             pincode: updated.pincode,
             source: updated.source,
@@ -850,6 +856,7 @@ export default function ClientsTab() {
             state: updated.state,
             city: updated.city,
             area: updated.area,
+            manualAddress: updated.manualAddress || undefined,
             notes: updated.notes || undefined,
             createdAt: updated.createdAt
           } : c))
@@ -863,7 +870,7 @@ export default function ClientsTab() {
           body: JSON.stringify({
             name: formName,
             company: formCompany,
-            email: formEmail,
+            email: formEmail.trim() || undefined,
             phone: formPhone,
             pincode: formPincode,
             source: formSource,
@@ -873,6 +880,7 @@ export default function ClientsTab() {
             state: formState,
             city: formCity,
             area: formArea,
+            manualAddress: formManualAddress.trim() || undefined,
             notes: formNotes || undefined,
             date: formDate
           })
@@ -889,7 +897,7 @@ export default function ClientsTab() {
           clientId: created.clientId,
           name: created.name,
           company: created.company,
-          email: created.email,
+          email: created.email || undefined,
           phone: created.phone,
           pincode: created.pincode,
           source: created.source,
@@ -899,6 +907,7 @@ export default function ClientsTab() {
           area: created.area,
           city: created.city,
           state: created.state,
+          manualAddress: created.manualAddress || undefined,
           status: created.status,
           notes: created.notes || undefined,
           isConverted: !!created.isConverted,
@@ -919,6 +928,7 @@ export default function ClientsTab() {
       setFormPhone("");
       setFormPincode("");
       setFormEmail("");
+      setFormManualAddress("");
       setFormSource("LinkedIn");
       setFormSourceLink("");
       setFormContactMode("Call");
@@ -964,7 +974,7 @@ export default function ClientsTab() {
   const mapMarkers = useMemo(() => {
     if (selectedCity && areasList.length > 0) {
       return areasList
-        .filter((a) => a.lat !== 0 || a.lng !== 0)
+        .filter((a) => (a.lat !== 0 || a.lng !== 0) && a.clientCount > 0)
         .map((area) => ({
           id: area.id,
           name: area.name,
@@ -976,7 +986,7 @@ export default function ClientsTab() {
     }
     if (selectedState && citiesList.length > 0) {
       return citiesList
-        .filter((c) => c.lat !== 0 || c.lng !== 0)
+        .filter((c) => (c.lat !== 0 || c.lng !== 0) && c.clientCount > 0)
         .map((city) => ({
           id: city.id,
           name: city.name,
@@ -987,7 +997,7 @@ export default function ClientsTab() {
     }
     if (statesList.length > 0) {
       return statesList
-        .filter((s) => s.lat !== 0 || s.lng !== 0)
+        .filter((s) => (s.lat !== 0 || s.lng !== 0) && s.clientCount > 0)
         .map((state) => ({
           id: state.id,
           name: state.name,
@@ -1428,7 +1438,7 @@ export default function ClientsTab() {
                       <div className="flex items-center gap-3 text-[10px] text-slate-400 mt-1">
                         <span className="flex items-center gap-1">
                           <Mail className="w-3.5 h-3.5" />
-                          {client.email}
+                          {client.email || "—"}
                         </span>
                         <span className="flex items-center gap-1">
                           <PhoneCall className="w-3.5 h-3.5" />
@@ -1691,12 +1701,11 @@ export default function ClientsTab() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">
-                        Email Address *
+                        Email Address
                       </label>
                       <input
                         type="email"
-                        required
-                        placeholder="john.doe@ansh.com"
+                        placeholder="john.doe@ansh.com (optional)"
                         value={formEmail}
                         onChange={(e) => setFormEmail(e.target.value)}
                         className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-slate-850 rounded-lg outline-none bg-slate-50/50 dark:bg-slate-950/20 focus:border-primary transition"
@@ -1960,6 +1969,19 @@ export default function ClientsTab() {
                         </select>
                         <ChevronDown className="w-3.5 h-3.5 absolute right-3 top-2.5 text-slate-400 pointer-events-none" />
                       </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase">
+                        Manual Address (optional)
+                      </label>
+                      <textarea
+                        rows={2}
+                        placeholder="Flat no., street, landmark, or any extra address details..."
+                        value={formManualAddress}
+                        onChange={(e) => setFormManualAddress(e.target.value)}
+                        className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-slate-850 rounded-lg outline-none bg-slate-50/50 dark:bg-slate-950/20 focus:border-primary transition resize-none"
+                      />
                     </div>
                   </div>
                 </form>
@@ -2278,7 +2300,7 @@ export default function ClientsTab() {
                     <div className="grid grid-cols-2 gap-3 text-xs">
                       <div className="bg-slate-50 dark:bg-slate-950/20 p-2.5 rounded-xl border border-slate-200/50 dark:border-slate-850">
                         <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-semibold">Email Address</span>
-                        <span className="font-bold text-slate-900 dark:text-white block mt-0.5 break-all">{detailedClient.email}</span>
+                        <span className="font-bold text-slate-900 dark:text-white block mt-0.5 break-all">{detailedClient.email || "—"}</span>
                       </div>
                       <div className="bg-slate-50 dark:bg-slate-950/20 p-2.5 rounded-xl border border-slate-200/50 dark:border-slate-850">
                         <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-semibold">Phone Number</span>
@@ -2339,6 +2361,12 @@ export default function ClientsTab() {
                         <span className="text-slate-500 dark:text-slate-400 font-semibold">Address Pincode</span>
                         <span className="font-bold text-primary">{detailedClient.pincode}</span>
                       </div>
+                      {detailedClient.manualAddress && (
+                        <div className="pt-1 border-t border-slate-200/50 dark:border-slate-800/50">
+                          <span className="text-slate-500 dark:text-slate-400 font-semibold block mb-1">Manual Address</span>
+                          <span className="font-bold text-slate-900 dark:text-white leading-relaxed">{detailedClient.manualAddress}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 

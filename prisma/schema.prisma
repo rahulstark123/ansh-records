@@ -13,7 +13,7 @@ model Client {
   clientId        String   @unique
   name            String
   company         String
-  email           String
+  email           String?
   phone           String
   pincode         String
   source          String
@@ -23,6 +23,7 @@ model Client {
   state           String
   city            String
   area            String
+  manualAddress   String?
   status          String   @default("Active")
   notes           String?
   isConverted     Boolean  @default(false)

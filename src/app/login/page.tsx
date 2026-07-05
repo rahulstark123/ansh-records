@@ -2,9 +2,64 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, ShieldCheck, ArrowRight, ShieldAlert, CheckCircle2, Shield, KeyRound, Hash } from "lucide-react";
+import { Mail, Lock, ArrowRight, ShieldAlert, CheckCircle2, KeyRound, Hash, Eye, EyeOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getSupabase } from "@/lib/supabase";
+import AppLogo from "@/components/AppLogo";
+
+function SecureInput({
+  label,
+  value,
+  onChange,
+  placeholder,
+  icon: Icon,
+  disabled,
+  maxLength,
+  show,
+  onToggleShow
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  icon: React.ComponentType<{ className?: string }>;
+  disabled?: boolean;
+  maxLength?: number;
+  show: boolean;
+  onToggleShow: () => void;
+}) {
+  return (
+    <div className="space-y-1">
+      <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+        {label}
+      </label>
+      <div className="relative">
+        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 dark:text-slate-400">
+          <Icon className="w-4.5 h-4.5" />
+        </div>
+        <input
+          type={show ? "text" : "password"}
+          required
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          maxLength={maxLength}
+          className="w-full pl-10 pr-11 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white/60 dark:bg-slate-900/60 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none text-xs font-semibold transition text-slate-900 dark:text-white"
+          disabled={disabled}
+        />
+        <button
+          type="button"
+          onClick={onToggleShow}
+          disabled={disabled}
+          className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition cursor-pointer disabled:opacity-50"
+          aria-label={show ? "Hide value" : "Show value"}
+        >
+          {show ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,6 +70,9 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPasscode, setShowPasscode] = useState(false);
+  const [showPin, setShowPin] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,14 +130,12 @@ export default function LoginPage() {
 
       <div className="w-full max-w-md z-10">
         {/* Logo/Branding */}
-        <div className="flex flex-col items-center mb-8 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20 mb-3">
-            <Shield className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+        <div className="flex flex-col items-center mb-6 text-center">
+          <AppLogo height={96} width={200} priority className="mb-2" />
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent leading-tight">
             ANSH Record
           </h1>
-          <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mt-1.5">
+          <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mt-1">
             Client Directory & Geographical Intelligence Suite
           </p>
         </div>
@@ -144,69 +200,39 @@ export default function LoginPage() {
                     </div>
                   </div>
 
-                  {/* Password */}
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
-                      Security Password *
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 dark:text-slate-400">
-                        <Lock className="w-4.5 h-4.5" />
-                      </div>
-                      <input
-                        type="password"
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••••••"
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white/60 dark:bg-slate-900/60 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none text-xs font-semibold transition text-slate-900 dark:text-white"
-                        disabled={isLoading}
-                      />
-                    </div>
-                  </div>
+                  <SecureInput
+                    label="Security Password *"
+                    value={password}
+                    onChange={setPassword}
+                    placeholder="••••••••••••"
+                    icon={Lock}
+                    disabled={isLoading}
+                    show={showPassword}
+                    onToggleShow={() => setShowPassword((prev) => !prev)}
+                  />
 
-                  {/* Passcode */}
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
-                      Access Passcode *
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 dark:text-slate-400">
-                        <KeyRound className="w-4.5 h-4.5" />
-                      </div>
-                      <input
-                        type="password"
-                        required
-                        value={passcode}
-                        onChange={(e) => setPasscode(e.target.value)}
-                        placeholder="••••••••••••"
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white/60 dark:bg-slate-900/60 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none text-xs font-semibold transition text-slate-900 dark:text-white"
-                        disabled={isLoading}
-                      />
-                    </div>
-                  </div>
+                  <SecureInput
+                    label="Access Passcode *"
+                    value={passcode}
+                    onChange={setPasscode}
+                    placeholder="••••••••••••"
+                    icon={KeyRound}
+                    disabled={isLoading}
+                    show={showPasscode}
+                    onToggleShow={() => setShowPasscode((prev) => !prev)}
+                  />
 
-                  {/* Security PIN */}
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
-                      System PIN (8 Digits) *
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 dark:text-slate-400">
-                        <Hash className="w-4.5 h-4.5" />
-                      </div>
-                      <input
-                        type="password"
-                        required
-                        maxLength={8}
-                        value={pin}
-                        onChange={(e) => setPin(e.target.value)}
-                        placeholder="••••••••"
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white/60 dark:bg-slate-900/60 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none text-xs font-semibold transition text-slate-900 dark:text-white"
-                        disabled={isLoading}
-                      />
-                    </div>
-                  </div>
+                  <SecureInput
+                    label="System PIN (8 Digits) *"
+                    value={pin}
+                    onChange={setPin}
+                    placeholder="••••••••"
+                    icon={Hash}
+                    maxLength={8}
+                    disabled={isLoading}
+                    show={showPin}
+                    onToggleShow={() => setShowPin((prev) => !prev)}
+                  />
                 </div>
 
                 {/* Submit button */}
