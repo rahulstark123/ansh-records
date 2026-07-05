@@ -7,7 +7,6 @@ import {
   TrendingDown, 
   Plus, 
   Calendar, 
-  MapPin, 
   FileText, 
   CheckCircle, 
   XCircle, 
@@ -60,8 +59,8 @@ export default function TargetsTab() {
     setTargetCurrentPage(1);
   }, [targets.length]);
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete the target log for ${name}?`)) return;
+  const handleDelete = async (id: string, dateLabel: string) => {
+    if (!confirm(`Are you sure you want to delete the outreach log for ${dateLabel}?`)) return;
 
     try {
       const res = await fetch(`/api/targets?id=${id}`, {
@@ -181,7 +180,7 @@ export default function TargetsTab() {
             Daily Outreach Quota Manager
           </h3>
           <p className="text-xs text-slate-400 mt-0.5">
-            Your daily target is to reach at least 100 clients across focused geographical sectors. Outreach tallies update automatically as clients are added.
+            Your daily target is to reach at least 100 clients per day. All clients added on the same date count toward one daily log.
           </p>
         </div>
       </div>
@@ -308,7 +307,7 @@ export default function TargetsTab() {
                       return (
                         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 shadow-xl space-y-1 text-xs">
                           <p className="font-extrabold text-slate-900 dark:text-white">{data.dateLabel}</p>
-                          <p className="font-semibold text-slate-500 dark:text-slate-400">Area: <strong className="text-slate-800 dark:text-slate-200">{data.area}</strong></p>
+                          <p className="font-semibold text-slate-500 dark:text-slate-400">Daily goal: <strong className="text-slate-800 dark:text-slate-200">{data.target} leads</strong></p>
                           <div className="flex items-center gap-3 pt-1 border-t border-slate-100 dark:border-slate-850 mt-1">
                             <span className="font-semibold text-primary">Reached: <strong className="font-extrabold">{data.reached}</strong></span>
                             <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
@@ -358,7 +357,7 @@ export default function TargetsTab() {
               Historical Outreach Target Registry
             </h4>
             <p className="text-xs text-slate-400 mt-0.5">
-              Log database of focused geographical sectors and daily leads reached.
+              Log database of daily outreach totals (100 leads per day goal).
             </p>
           </div>
           <div className="flex items-center gap-1.5">
@@ -381,7 +380,7 @@ export default function TargetsTab() {
             <thead>
               <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 text-slate-500 font-bold uppercase text-[9px] tracking-wider">
                 <th className="px-6 py-3.5">Log Date</th>
-                <th className="px-6 py-3.5">Focused Geographic Sector</th>
+                <th className="px-6 py-3.5">Daily Quota</th>
                 <th className="px-6 py-3.5">Leads Reached</th>
                 <th className="px-6 py-3.5">Goal Progress</th>
                 <th className="px-6 py-3.5">Notes</th>
@@ -395,20 +394,21 @@ export default function TargetsTab() {
                 [...targets].reverse().slice((targetCurrentPage - 1) * targetsPerPage, targetCurrentPage * targetsPerPage).map((target) => {
                   const isSuccess = target.reachedCount >= target.dailyTarget;
                   const percent = Math.round((target.reachedCount / target.dailyTarget) * 100);
+                  const dateLabel = new Date(target.date).toLocaleDateString("en-US", {
+                    weekday: "short",
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric"
+                  });
 
                   return (
                     <tr key={target.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-colors">
                       <td className="px-6 py-4 font-semibold text-slate-700 dark:text-slate-200">
-                        {new Date(target.date).toLocaleDateString("en-US", {
-                          weekday: "short",
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric"
-                        })}
+                        {dateLabel}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-1.5">
-                          <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+                          <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
                           <span className="font-bold text-slate-900 dark:text-slate-100">{target.focusedArea}</span>
                         </div>
                       </td>
@@ -430,7 +430,7 @@ export default function TargetsTab() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <button
-                          onClick={() => handleDelete(target.id, target.focusedArea)}
+                          onClick={() => handleDelete(target.id, dateLabel)}
                           className="p-1.5 rounded bg-danger-soft hover:bg-red-200/50 text-danger transition cursor-pointer"
                           title="Delete Target Log"
                         >

@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { jsonResponse } from "@/lib/api-response";
+import { aggregateTargetsByDate, consolidateDuplicateDayTargets, findTargetsForDay } from "@/lib/targets";
 
 export async function GET() {
   try {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date();
-    todayEnd.setHours(23, 59, 59, 999);
+    await consolidateDuplicateDayTargets();
 
     const [
       totalClients,
@@ -19,8 +17,7 @@ export async function GET() {
       sourceGroups,
       contactModeGroups,
       recentClients,
-      targetStats,
-      todayTargets
+      allTargets
     ] = await Promise.all([
       prisma.client.count(),
       prisma.client.count({ where: { status: "Active" } }),
@@ -57,20 +54,20 @@ export async function GET() {
           isConverted: true
         }
       }),
-      prisma.target.aggregate({
-        _sum: { reachedCount: true },
-        _avg: { reachedCount: true }
-      }),
-      prisma.target.findMany({
-        where: { date: { gte: todayStart, lte: todayEnd } },
-        select: { reachedCount: true }
-      })
+      prisma.target.findMany({ orderBy: { date: "asc" } })
     ]);
+
+    const aggregatedTargets = aggregateTargetsByDate(allTargets);
+    const todayDayTargets = await findTargetsForDay(new Date());
 
     const totalCountries = countryGroups.length;
     const totalRevenue = revenueAgg._sum.amountPaid || 0;
     const totalSeats = revenueAgg._sum.seatsCount || 0;
-    const todayReached = todayTargets.reduce((sum, t) => sum + t.reachedCount, 0);
+    const todayReached = todayDayTargets.reduce((sum, t) => sum + t.reachedCount, 0);
+    const totalReachedSum = aggregatedTargets.reduce((sum, t) => sum + t.reachedCount, 0);
+    const avgReached = aggregatedTargets.length > 0
+      ? Math.round(totalReachedSum / aggregatedTargets.length)
+      : 0;
 
     return jsonResponse({
       stats: {
@@ -84,8 +81,8 @@ export async function GET() {
         conversionRate: totalClients > 0 ? Math.round((convertedClients / totalClients) * 100) : 0
       },
       targets: {
-        totalReached: targetStats._sum.reachedCount || 0,
-        avgReached: Math.round(targetStats._avg.reachedCount || 0),
+        totalReached: totalReachedSum,
+        avgReached,
         todayReached
       },
       topRegions: stateGroups.map((g) => ({

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { jsonResponse } from "@/lib/api-response";
+import { decrementDailyTarget, incrementDailyTarget } from "@/lib/targets";
 
 export async function GET() {
   try {
@@ -62,41 +63,10 @@ export async function POST(req: Request) {
       }
     });
 
-    // Auto-update Outreach Targets
-    const startOfDay = new Date(clientDate);
-    startOfDay.setUTCHours(0, 0, 0, 0);
-    const endOfDay = new Date(clientDate);
-    endOfDay.setUTCHours(23, 59, 59, 999);
-
-    const existingTarget = await prisma.target.findFirst({
-      where: {
-        date: {
-          gte: startOfDay,
-          lte: endOfDay
-        },
-        focusedArea: {
-          equals: body.area,
-          mode: "insensitive"
-        }
-      }
-    });
-
-    if (existingTarget) {
-      await prisma.target.update({
-        where: { id: existingTarget.id },
-        data: { reachedCount: { increment: 1 } }
-      });
-    } else {
-      await prisma.target.create({
-        data: {
-          date: startOfDay,
-          focusedArea: body.area,
-          reachedCount: 1,
-          dailyTarget: 100,
-          notes: `Auto-logged from client registration (${body.name} - ${body.company})`
-        }
-      });
-    }
+    await incrementDailyTarget(
+      clientDate,
+      `Auto-logged from client registration (${body.name} - ${body.company})`
+    );
 
     return NextResponse.json(client);
   } catch (error: any) {
@@ -164,37 +134,7 @@ export async function DELETE(req: Request) {
     });
 
     if (client) {
-      const clientDate = client.createdAt;
-      const startOfDay = new Date(clientDate);
-      startOfDay.setUTCHours(0, 0, 0, 0);
-      const endOfDay = new Date(clientDate);
-      endOfDay.setUTCHours(23, 59, 59, 999);
-
-      const matchingTarget = await prisma.target.findFirst({
-        where: {
-          date: {
-            gte: startOfDay,
-            lte: endOfDay
-          },
-          focusedArea: {
-            equals: client.area,
-            mode: "insensitive"
-          }
-        }
-      });
-
-      if (matchingTarget) {
-        if (matchingTarget.reachedCount > 1) {
-          await prisma.target.update({
-            where: { id: matchingTarget.id },
-            data: { reachedCount: { decrement: 1 } }
-          });
-        } else {
-          await prisma.target.delete({
-            where: { id: matchingTarget.id }
-          });
-        }
-      }
+      await decrementDailyTarget(client.createdAt);
     }
 
     await prisma.client.delete({
